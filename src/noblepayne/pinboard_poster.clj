@@ -109,12 +109,6 @@
        :satus))
 
 ;; ~~~~~~~~~~ Main ~~~~~~~~~~
-; grab feed
-; get all items
-; build map of id's to items
-; find new ids
-; grab all item bodies for those ids
-
 (defn process-feed [conn feed-url]
   (let [feed (pull-feed feed-url)
         items (find-items feed)

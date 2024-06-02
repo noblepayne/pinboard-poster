@@ -139,7 +139,7 @@
           (catch Exception e (d/abort-transact txn) (throw e)))))))
 
 (defn -main [& args]
-  (d/with-conn [conn "db" SCHEMA]
+  (d/with-conn [conn "db" SCHEMA {:kv-opts {:mapsize 5}}]
     (doseq [feed FEEDS]
       (process-feed conn feed))))
 

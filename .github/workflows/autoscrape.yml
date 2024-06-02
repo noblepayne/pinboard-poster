@@ -1,0 +1,26 @@
+name: autoscrape
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  follow-feed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4
+    - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/magic-nix-cache-action@main
+    - name: follow-feed
+      env:
+        SLACK_URL: ${{ secrets.SLACK_URL }}
+      run: nix run .
+    - name: commit
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Updating database."
+        file_pattern: "db"

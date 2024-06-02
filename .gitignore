@@ -1,0 +1,9 @@
+.calva/
+.clj-kondo/
+.cpcache/
+.devenv/
+.env*
+.lsp/
+.nrepl-port
+.portal/
+result

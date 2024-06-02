@@ -1,2 +1,2 @@
 # pinboard-poster
-Follow pinboard RSS feed and post to slack
+Follow [pinboard](https://pinboard.in) RSS feed and post to slack

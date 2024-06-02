@@ -1,4 +1,4 @@
-name: autoscrape
+name: follow-feeds
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     - cron: '*/5 * * * *'
 
 jobs:
-  follow-feed:
+  follow-feeds:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: DeterminateSystems/nix-installer-action@main
     - uses: DeterminateSystems/magic-nix-cache-action@main
-    - name: follow-feed
+    - name: follow-feeds
       env:
         SLACK_URL: ${{ secrets.SLACK_URL }}
       run: nix run .

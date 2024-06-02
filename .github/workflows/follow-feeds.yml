@@ -18,7 +18,7 @@ jobs:
     - name: follow-feeds
       env:
         SLACK_URL: ${{ secrets.SLACK_URL }}
-      run: nix run .
+      run: nix run github:noblepayne/pinboard-poster/cli
     - name: commit
       uses: stefanzweifel/git-auto-commit-action@v5
       with:

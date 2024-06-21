@@ -2,11 +2,12 @@
   {:clj-kondo/config '{:lint-as {datalevin.core/with-transaction clojure.core/let}
                        :linters {:unresolved-symbol {:exclude [(datalevin.core/with-conn)]}}}}
   (:gen-class)
-  (:require [datalevin.core :as d]
+  (:require [babashka.fs :as fs]
             [clojure.data.xml :as xml]
             [clojure.string :as str]
             [clojure.zip :as zip]
             [cheshire.core :as json]
+            [datalevin.core :as d]
             [hato.client :as http]
             [hickory.core :as h]
             [hickory.select :as hs]
@@ -23,6 +24,12 @@
              :feed.item/unique-id {:db/valueType :db.type/tuple
                                    :db/tupleAttrs [:feed/id :feed.item/id]
                                    :db/unique :db.unique/identity}})
+
+;; This only controls the initial db size, it will be resized as needed.
+;; Database shouldn't need to exceed 1MB, add some margin in case we temp.
+;; exceed between maintenance events.
+;; TODO: prune database to most recent 100 feed items or similar?
+(def KV-OPTS {:kv-opts {:mapsize 2}})
 
 ;; ~~~~~~~~~~ Feed Processing ~~~~~~~~~~
 (defn pull-feed [feed-url]
@@ -132,15 +139,22 @@
                                                 (throw e)))
           (catch Exception e (d/abort-transact txn) (throw e)))))))
 
-(defn -main [& args]
-  (d/with-conn [conn "db" SCHEMA {:kv-opts {:mapsize 5}}]
+(defn -main [& _]
+  (d/with-conn [conn "db" SCHEMA KV-OPTS]
     (doseq [feed FEEDS]
-      (process-feed conn feed))))
+      (process-feed conn feed))
+    ;; re-init db to reduce size 
+    ;; BUG? second opening of db always resizes to 100M
+    ;; re-init respects KV-OPTS and tries to fit it into mapsize.
+    (d/init-db (d/datoms (d/db conn) :eav) "db2" SCHEMA KV-OPTS)) 
+  ;; Replace db with fresh version.
+  (fs/delete-tree "db")
+  (fs/move "db2" "db"))
 
 (comment
 
   (-main)
 
-  (def conn (d/get-conn "db" SCHEMA))
+  (def conn (d/get-conn "db" SCHEMA KV-OPTS))
   (process-feed conn (first FEEDS))
   (d/close conn))

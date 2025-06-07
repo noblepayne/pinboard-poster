@@ -148,6 +148,7 @@
     ;; re-init respects KV-OPTS and tries to fit it into mapsize.
     (d/init-db (d/datoms (d/db conn) :eav) "db2" SCHEMA KV-OPTS)) 
   ;; Replace db with fresh version.
+  ;; TODO: replace with d/copy?
   (fs/delete-tree "db")
   (fs/move "db2" "db"))
 

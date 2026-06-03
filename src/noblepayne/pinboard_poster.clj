@@ -126,22 +126,27 @@
 
 ;; ~~~~~~~~~~ Main ~~~~~~~~~~
 (defn process-feed-config [conn {:keys [feed channel label]}]
-  (let [items (-> feed pull-feed find-items)
-        parsed-items (map (comp (juxt :id identity) extract-feed-item) items)
-        item-map (apply array-map (flatten parsed-items))
-        all-ids (keys item-map)
-        unseen-ids (unseen-items conn feed all-ids)]
-    (doseq [id unseen-ids
-            :let [item (get item-map id)]]
-      (let [status (post-to-slack item channel label)]
-        (when (and status (<= 200 status 299))
-          (d/with-transaction [txn conn]
-            (try
-              (store-item txn feed id)
-              (println "Processed:" id)
-              (catch clojure.lang.ExceptionInfo e
-                (when (not= :transact/unique (-> e ex-data :error))
-                  (throw e))))))))))
+  (println "Checking feed:" feed)
+  (try
+    (let [items (-> feed pull-feed find-items)
+          parsed-items (map (comp (juxt :id identity) extract-feed-item) items)
+          item-map (apply array-map (flatten parsed-items))
+          all-ids (keys item-map)
+          unseen-ids (unseen-items conn feed all-ids)]
+      (println "Found" (count items) "items in" feed ". Unseen:" (count unseen-ids))
+      (doseq [id unseen-ids
+              :let [item (get item-map id)]]
+        (let [status (post-to-slack item channel label)]
+          (when (and status (<= 200 status 299))
+            (d/with-transaction [txn conn]
+              (try
+                (store-item txn feed id)
+                (println "Processed:" id)
+                (catch clojure.lang.ExceptionInfo e
+                  (when (not= :transact/unique (-> e ex-data :error))
+                    (throw e)))))))))
+    (catch Exception e
+      (println "Error processing feed" feed ":" (.getMessage e)))))
 
 (defn -main [& _]
   (d/with-conn [conn "db" SCHEMA KV-OPTS]
